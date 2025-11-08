@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>📘AIノート整理くん（AI要約版）</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; }
+    h1 { text-align: center; }
+    textarea { width: 100%; height: 200px; margin-top: 10px; }
+    button { margin-top: 10px; padding: 8px 16px; }
+  </style>
+</head>
+<body>
+  <h1>📘AIノート整理くん（AI要約版）</h1>
+  <p>メモや教科書の写真をアップロードしてください。</p>
+
+  <input type="file" id="fileInput" accept="image/*"><br>
+  <button id="extractBtn">AIで整理する</button>
+
+  <h3>【抽出された文字】</h3>
+  <textarea id="extractedText"></textarea>
+
+  <h3>【AI整理結果】</h3>
+  <textarea id="aiSummary"></textarea>
+
+  <script>
+  document.getElementById("extractBtn").onclick = async () => {
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) { alert("画像を選択してください"); return; }
+
+    // --- OCR処理 ---
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("apikey", "helloworld"); // ocr.space 無料キー
+    formData.append("language", "jpn");
+
+    const ocrResponse = await fetch("https://api.ocr.space/parse/image", {
+      method: "POST",
+      body: formData
+    });
+    const ocrResult = await ocrResponse.json();
+    const text = ocrResult.ParsedResults?.[0]?.ParsedText || "(文字を読み取れませんでした)";
+    document.getElementById("extractedText").value = text;
+
+    // --- ChatGPTで整理 ---
+    const apiKey = prompt("あなたのOpenAI APIキーを入力してください（安全です）:");
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{
+          role: "system",
+          content: "あなたは優秀なノート整理アシスタントです。OCR文字を整理して、見やすいノート形式にしてください。"
+        },{
+          role: "user",
+          content: text
+        }]
+      })
+    });
+    const data = await aiResponse.json();
+    document.getElementById("aiSummary").value = data.choices[0].message.content;
+  };
+  </script>
+</body>
+</html>
