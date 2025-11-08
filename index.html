@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AIノート整理くん</title>
+<style>
+body { font-family: sans-serif; margin: 30px; background: #f6f8fa; }
+h1 { color: #333; }
+#result { white-space: pre-wrap; background: white; padding: 10px; border-radius: 6px; margin-top: 10px; }
+button { margin-top: 10px; padding: 10px 20px; }
+</style>
+</head>
+<body>
+  <h1>📘 AIノート整理くん（体験版）</h1>
+  <p>メモや教科書の写真をアップロードしてください。</p>
+  <input type="file" id="imageInput" accept="image/*">
+  <button onclick="processImage()">AIで整理する</button>
+
+  <div id="result"></div>
+
+<script>
+async function processImage() {
+  const file = document.getElementById('imageInput').files[0];
+  if (!file) {
+    alert('画像を選んでください');
+    return;
+  }
+
+  document.getElementById('result').innerText = "📸 画像を処理中...";
+
+  // OCR（文字起こし）APIを呼ぶ
+  const formData = new FormData();
+  formData.append("file", file);
+
+  // 無料OCR API（api.ocr.space）を使用
+  const res = await fetch("https://api.ocr.space/parse/image", {
+    method: "POST",
+    headers: { "apikey": "helloworld" }, // 無料テストキー
+    body: formData
+  });
+  const data = await res.json();
+  const text = data.ParsedResults?.[0]?.ParsedText || "(文字が見つかりませんでした)";
+  
+  // OpenAIなどに投げる代わりに、ここでは簡単な整理を模倣
+  const summary = text.slice(0, 200).replace(/\s+/g, " ");
+  const fakeAIResult = `
+【抽出された文字】:
+${text}
+
+【AI整理サマリー】:
+${summary.length > 0 ? summary + "..." : "文章が短すぎます。"}
+`;
+
+  document.getElementById('result').innerText = fakeAIResult;
+}
+</script>
+</body>
+</html>
